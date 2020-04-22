@@ -81,6 +81,28 @@ public class ResolveTakenPictureAsyncTask extends AsyncTask<Void, Void, Writable
             inputStream = new ByteArrayInputStream(mImageData);
 
 
+            if (
+                mOptions.hasKey("fixOrientation") &&
+                mOptions.getBoolean("fixOrientation") &&
+                mOptions.hasKey("width") &&
+                mOptions.hasKey("mirrorImage")
+            ) {
+
+                exifInterface = new ExifInterface(inputStream);
+
+                // Get orientation of the image from mImageData via inputStream
+                int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
+
+                loadBitmap();
+                if(orientation != ExifInterface.ORIENTATION_UNDEFINED){
+                    mBitmap = rotateResizeMirrorBitmap(mBitmap, getImageRotation(orientation), mOptions.getInt("width"), mOptions.getBoolean("mirrorImage"), true);
+                    orientationChanged = true;
+                } else {
+                    mBitmap = rotateResizeMirrorBitmap(mBitmap, 0, mOptions.getInt("width"), mOptions.getBoolean("mirrorImage"), false);
+                }
+            }
+
+            /*
             // Rotate the bitmap to the proper orientation if requested
             if(mOptions.hasKey("fixOrientation") && mOptions.getBoolean("fixOrientation")){
 
@@ -107,6 +129,7 @@ public class ResolveTakenPictureAsyncTask extends AsyncTask<Void, Void, Writable
                 loadBitmap();
                 mBitmap = flipHorizontally(mBitmap);
             }
+            */
 
 
             // EXIF code - we will adjust exif info later if we manipulated the bitmap
@@ -275,6 +298,33 @@ public class ResolveTakenPictureAsyncTask extends AsyncTask<Void, Void, Writable
         }
 
         return null;
+    }
+
+    private Bitmap rotateResizeMirrorBitmap(Bitmap source, int angle, int newSize, boolean mirrorImage, boolean rotate) {
+        int width = source.getWidth();
+        int height = source.getHeight();
+        Matrix matrix = new Matrix();
+        float scaleRatio = 1.0f;
+
+        if (width > newSize || height > newSize) {
+            if (height > width) {
+                scaleRatio = (float) newSize / (float) height;
+            } else {
+                scaleRatio = (float) newSize / (float) width;
+            }
+        }
+
+        if (mirrorImage) {
+            matrix.preScale(-scaleRatio, scaleRatio);
+        } else {
+            matrix.preScale(scaleRatio, scaleRatio);
+        }
+
+        if (rotate) {
+            matrix.preRotate(angle);
+        }
+
+        return Bitmap.createBitmap(source, 0, 0, width, height, matrix, true);
     }
 
     private Bitmap rotateBitmap(Bitmap source, int angle) {
