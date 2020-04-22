@@ -98,7 +98,9 @@ public class ResolveTakenPictureAsyncTask extends AsyncTask<Void, Void, Writable
 
             if (mOptions.hasKey("width")) {
                 loadBitmap();
-                mBitmap = resizeBitmap(mBitmap, mOptions.getInt("width"));
+                if (mBitmap.getWidth() > mOptions.getInt("width") || mBitmap.getHeight() > mOptions.getInt("width")) {
+                    mBitmap = resizeBitmap(mBitmap, mOptions.getInt("width"));
+                }
             }
 
             if (mOptions.hasKey("mirrorImage") && mOptions.getBoolean("mirrorImage")) {
@@ -281,12 +283,17 @@ public class ResolveTakenPictureAsyncTask extends AsyncTask<Void, Void, Writable
         return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
     }
 
-    private Bitmap resizeBitmap(Bitmap bm, int newWidth) {
+    private Bitmap resizeBitmap(Bitmap bm, int newSize) {
         int width = bm.getWidth();
         int height = bm.getHeight();
-        float scaleRatio = (float) newWidth / (float) width;
 
-        return Bitmap.createScaledBitmap(bm, newWidth, (int) (height * scaleRatio), true);
+        if (height > width) {
+            float scaleRatio = (float) newSize / (float) height;
+            return Bitmap.createScaledBitmap(bm, (int) (width * scaleRatio), newSize, true);
+        } else {
+            float scaleRatio = (float) newSize / (float) width;
+            return Bitmap.createScaledBitmap(bm, newSize, (int) (height * scaleRatio), true);
+        }
     }
 
     private Bitmap flipHorizontally(Bitmap source) {
