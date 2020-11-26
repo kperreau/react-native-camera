@@ -85,52 +85,51 @@ public class ResolveTakenPictureAsyncTask extends AsyncTask<Void, Void, Writable
                 mOptions.hasKey("fixOrientation") &&
                 mOptions.getBoolean("fixOrientation") &&
                 mOptions.hasKey("width") &&
-                mOptions.hasKey("mirrorImage")
+                mOptions.hasKey("mirrorImage") &&
+                mOptions.hasKey("minWidth") &&
+                mOptions.getBoolean("minWidth")
             ) {
-
+                boolean minWidth = mOptions.hasKey("minWidth") && mOptions.getBoolean("minWidth");
                 exifInterface = new ExifInterface(inputStream);
 
                 // Get orientation of the image from mImageData via inputStream
                 int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
 
                 loadBitmap();
-                if(orientation != ExifInterface.ORIENTATION_UNDEFINED){
-                    mBitmap = rotateResizeMirrorBitmap(mBitmap, getImageRotation(orientation), mOptions.getInt("width"), mOptions.getBoolean("mirrorImage"), true);
+                if (orientation != ExifInterface.ORIENTATION_UNDEFINED){
+                    mBitmap = rotateResizeMirrorBitmap(mBitmap, getImageRotation(orientation), mOptions.getInt("width"), minWidth, mOptions.getBoolean("mirrorImage"), true);
                     orientationChanged = true;
                 } else {
-                    mBitmap = rotateResizeMirrorBitmap(mBitmap, 0, mOptions.getInt("width"), mOptions.getBoolean("mirrorImage"), false);
+                    mBitmap = rotateResizeMirrorBitmap(mBitmap, 0, mOptions.getInt("width"), minWidth, mOptions.getBoolean("mirrorImage"), false);
                 }
-            }
+            } else {
+                // Rotate the bitmap to the proper orientation if requested
+                if (mOptions.hasKey("fixOrientation") && mOptions.getBoolean("fixOrientation")){
 
-            /*
-            // Rotate the bitmap to the proper orientation if requested
-            if(mOptions.hasKey("fixOrientation") && mOptions.getBoolean("fixOrientation")){
+                    exifInterface = new ExifInterface(inputStream);
 
-                exifInterface = new ExifInterface(inputStream);
+                    // Get orientation of the image from mImageData via inputStream
+                    int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
 
-                // Get orientation of the image from mImageData via inputStream
-                int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
+                    if(orientation != ExifInterface.ORIENTATION_UNDEFINED){
+                        loadBitmap();
+                        mBitmap = rotateBitmap(mBitmap, getImageRotation(orientation));
+                        orientationChanged = true;
+                    }
+                }
 
-                if(orientation != ExifInterface.ORIENTATION_UNDEFINED){
+                if (mOptions.hasKey("width")) {
                     loadBitmap();
-                    mBitmap = rotateBitmap(mBitmap, getImageRotation(orientation));
-                    orientationChanged = true;
+                    if (mBitmap.getWidth() > mOptions.getInt("width") || mBitmap.getHeight() > mOptions.getInt("width")) {
+                        mBitmap = resizeBitmap(mBitmap, mOptions.getInt("width"));
+                    }
+                }
+
+                if (mOptions.hasKey("mirrorImage") && mOptions.getBoolean("mirrorImage")) {
+                    loadBitmap();
+                    mBitmap = flipHorizontally(mBitmap);
                 }
             }
-
-            if (mOptions.hasKey("width")) {
-                loadBitmap();
-                if (mBitmap.getWidth() > mOptions.getInt("width") || mBitmap.getHeight() > mOptions.getInt("width")) {
-                    mBitmap = resizeBitmap(mBitmap, mOptions.getInt("width"));
-                }
-            }
-
-            if (mOptions.hasKey("mirrorImage") && mOptions.getBoolean("mirrorImage")) {
-                loadBitmap();
-                mBitmap = flipHorizontally(mBitmap);
-            }
-            */
-
 
             // EXIF code - we will adjust exif info later if we manipulated the bitmap
             boolean writeExifToResponse = mOptions.hasKey("exif") && mOptions.getBoolean("exif");
@@ -300,14 +299,14 @@ public class ResolveTakenPictureAsyncTask extends AsyncTask<Void, Void, Writable
         return null;
     }
 
-    private Bitmap rotateResizeMirrorBitmap(Bitmap source, int angle, int newSize, boolean mirrorImage, boolean rotate) {
+    private Bitmap rotateResizeMirrorBitmap(Bitmap source, int angle, int newSize, boolean minSize, boolean mirrorImage, boolean rotate) {
         int width = source.getWidth();
         int height = source.getHeight();
         Matrix matrix = new Matrix();
         float scaleRatio = 1.0f;
 
         if (width > newSize || height > newSize) {
-            if (height > width) {
+            if ((height > width && !minSize) || (width > height && minSize)) {
                 scaleRatio = (float) newSize / (float) height;
             } else {
                 scaleRatio = (float) newSize / (float) width;
