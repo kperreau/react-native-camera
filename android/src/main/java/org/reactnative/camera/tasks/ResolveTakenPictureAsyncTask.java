@@ -86,8 +86,8 @@ public class ResolveTakenPictureAsyncTask extends AsyncTask<Void, Void, Writable
                 mOptions.getBoolean("fixOrientation") &&
                 mOptions.hasKey("width") &&
                 mOptions.hasKey("mirrorImage") &&
-                mOptions.hasKey("minWidth") &&
-                mOptions.getBoolean("minWidth")
+                mOptions.hasKey("perf") &&
+                mOptions.getBoolean("perf")
             ) {
                 boolean minWidth = mOptions.hasKey("minWidth") && mOptions.getBoolean("minWidth");
                 exifInterface = new ExifInterface(inputStream);
