@@ -85,11 +85,11 @@ public class ResolveTakenPictureAsyncTask extends AsyncTask<Void, Void, Writable
                 mOptions.hasKey("fixOrientation") &&
                 mOptions.getBoolean("fixOrientation") &&
                 mOptions.hasKey("width") &&
-                mOptions.hasKey("mirrorImage") &&
                 mOptions.hasKey("perf") &&
                 mOptions.getBoolean("perf")
             ) {
                 boolean minWidth = mOptions.hasKey("minWidth") && mOptions.getBoolean("minWidth");
+                boolean mirrorImage = mOptions.hasKey("mirrorImage") && mOptions.getBoolean("mirrorImage");
                 exifInterface = new ExifInterface(inputStream);
 
                 // Get orientation of the image from mImageData via inputStream
@@ -97,10 +97,10 @@ public class ResolveTakenPictureAsyncTask extends AsyncTask<Void, Void, Writable
 
                 loadBitmap();
                 if (orientation != ExifInterface.ORIENTATION_UNDEFINED){
-                    mBitmap = rotateResizeMirrorBitmap(mBitmap, getImageRotation(orientation), mOptions.getInt("width"), minWidth, mOptions.getBoolean("mirrorImage"), true);
+                    mBitmap = rotateResizeMirrorBitmap(mBitmap, getImageRotation(orientation), mOptions.getInt("width"), minWidth, mirrorImage, true);
                     orientationChanged = true;
                 } else {
-                    mBitmap = rotateResizeMirrorBitmap(mBitmap, 0, mOptions.getInt("width"), minWidth, mOptions.getBoolean("mirrorImage"), false);
+                    mBitmap = rotateResizeMirrorBitmap(mBitmap, 0, mOptions.getInt("width"), minWidth, mirrorImage, false);
                 }
             } else {
                 // Rotate the bitmap to the proper orientation if requested
